@@ -152,7 +152,7 @@ services:
       - "traefik.http.routers.taiga.tls=true"
       - "traefik.http.routers.taiga.tls.certresolver=letsencrypt"
       - "traefik.http.services.taiga-service.loadbalancer.server.port=80"
-       - "traefik.http.routers.taiga.service=taiga-service"
+      - "traefik.http.routers.taiga.service=taiga-service"
 
 volumes:
   taiga-static-data:
