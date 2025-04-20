@@ -39,4 +39,4 @@ services:
     entrypoint: "python manage.py"
     volumes: *default-back-volumes
     networks:
-      - taiga
+      - dokploy-network
