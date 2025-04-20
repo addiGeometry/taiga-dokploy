@@ -2,18 +2,14 @@ version: "3.5"
 
 x-environment:
   &default-back-environment
-  # These environment variables will be used by taiga-back and taiga-async.
-  # Database settings
-  POSTGRES_DB: "taiga"
+  POSTGRES_DB: "${POSTGRES_DB}"
   POSTGRES_USER: "${POSTGRES_USER}"
   POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
   POSTGRES_HOST: "taiga-db"
-  # Taiga settings
   TAIGA_SECRET_KEY: "${SECRET_KEY}"
   TAIGA_SITES_SCHEME: "${TAIGA_SCHEME}"
   TAIGA_SITES_DOMAIN: "${TAIGA_DOMAIN}"
   TAIGA_SUBPATH: "${SUBPATH}"
-  # Email settings.
   EMAIL_BACKEND: "django.core.mail.backends.${EMAIL_BACKEND}.EmailBackend"
   DEFAULT_FROM_EMAIL: "${EMAIL_DEFAULT_FROM}"
   EMAIL_USE_TLS: "${EMAIL_USE_TLS}"
@@ -22,19 +18,14 @@ x-environment:
   EMAIL_PORT: "${EMAIL_PORT}"
   EMAIL_HOST_USER: "${EMAIL_HOST_USER}"
   EMAIL_HOST_PASSWORD: "${EMAIL_HOST_PASSWORD}"
-  # Rabbitmq settings
   RABBITMQ_USER: "${RABBITMQ_USER}"
   RABBITMQ_PASS: "${RABBITMQ_PASS}"
-  # Telemetry settings
   ENABLE_TELEMETRY: "${ENABLE_TELEMETRY}"
-  # ...your customizations go here
 
 x-volumes:
   &default-back-volumes
-  # These volumens will be used by taiga-back and taiga-async.
   - taiga-static-data:/taiga-back/static
   - taiga-media-data:/taiga-back/media
-  # - ./config.py:/taiga-back/settings/config.py
 
 services:
   taiga-db:
@@ -52,14 +43,14 @@ services:
     volumes:
       - taiga-db-data:/var/lib/postgresql/data
     networks:
-      - taiga
+      - dokploy-network
 
   taiga-back:
     image: taigaio/taiga-back:latest
     environment: *default-back-environment
-    volumes: *default-back-volumes
+    volumes: *default-back-environment
     networks:
-      - taiga
+      - dokploy-network
     depends_on:
       taiga-db:
         condition: service_healthy
@@ -74,7 +65,7 @@ services:
     environment: *default-back-environment
     volumes: *default-back-volumes
     networks:
-      - taiga
+      - dokploy-network
     depends_on:
       taiga-db:
         condition: service_healthy
@@ -94,7 +85,7 @@ services:
     volumes:
       - taiga-async-rabbitmq-data:/var/lib/rabbitmq
     networks:
-      - taiga
+      - dokploy-network
 
   taiga-front:
     image: taigaio/taiga-front:latest
@@ -102,11 +93,10 @@ services:
       TAIGA_URL: "${TAIGA_SCHEME}://${TAIGA_DOMAIN}"
       TAIGA_WEBSOCKETS_URL: "${WEBSOCKETS_SCHEME}://${TAIGA_DOMAIN}"
       TAIGA_SUBPATH: "${SUBPATH}"
-      # ...your customizations go here
     networks:
-      - taiga
-    # volumes:
-    #   - ./conf.json:/usr/share/nginx/html/conf.json
+      - dokploy-network
+    volumes:
+      - ./conf.json:/usr/share/nginx/html/conf.json
 
   taiga-events:
     image: taigaio/taiga-events:latest
@@ -115,7 +105,7 @@ services:
       RABBITMQ_PASS: "${RABBITMQ_PASS}"
       TAIGA_SECRET_KEY: "${SECRET_KEY}"
     networks:
-      - taiga
+      - dokploy-network
     depends_on:
       taiga-events-rabbitmq:
         condition: service_started
@@ -131,7 +121,7 @@ services:
     volumes:
       - taiga-events-rabbitmq-data:/var/lib/rabbitmq
     networks:
-      - taiga
+      - dokploy-network
 
   taiga-protected:
     image: taigaio/taiga-protected:latest
@@ -139,7 +129,7 @@ services:
       MAX_AGE: "${ATTACHMENTS_MAX_AGE}"
       SECRET_KEY: "${SECRET_KEY}"
     networks:
-      - taiga
+      - dokploy-network
 
   taiga-gateway:
     image: nginx:1.19-alpine
@@ -150,11 +140,19 @@ services:
       - taiga-static-data:/taiga/static
       - taiga-media-data:/taiga/media
     networks:
-      - taiga
+      - dokploy-network
     depends_on:
       - taiga-front
       - taiga-back
       - taiga-events
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.taiga.rule=Host(`taiga.22contrasts.com`)"
+      - "traefik.http.routers.taiga.entrypoints=websecure"
+      - "traefik.http.routers.taiga.tls=true"
+      - "traefik.http.routers.taiga.tls.certresolver=letsencrypt"
+      - "traefik.http.services.taiga-service.loadbalancer.server.port=80"
+       - "traefik.http.routers.taiga.service=taiga-service"
 
 volumes:
   taiga-static-data:
@@ -164,4 +162,5 @@ volumes:
   taiga-events-rabbitmq-data:
 
 networks:
-  taiga:
+  dokploy-network:
+    external: true
