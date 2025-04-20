@@ -95,8 +95,8 @@ services:
       TAIGA_SUBPATH: "${SUBPATH}"
     networks:
       - dokploy-network
-    #volumes:
-    #- ./taiga-config:/usr/share/nginx/html/config
+    volumes:
+      - ./taiga-config:/usr/share/nginx/html/config
 
   taiga-events:
     image: taigaio/taiga-events:latest
