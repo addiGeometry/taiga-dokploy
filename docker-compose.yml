@@ -48,7 +48,7 @@ services:
   taiga-back:
     image: taigaio/taiga-back:latest
     environment: *default-back-environment
-    volumes: *default-back-environment
+    volumes: *default-back-volumes
     networks:
       - dokploy-network
     depends_on:
