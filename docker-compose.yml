@@ -146,13 +146,12 @@ services:
       - taiga-back
       - taiga-events
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.taiga.rule=Host(`taiga.22contrasts.com`)"
-      - "traefik.http.routers.taiga.entrypoints=websecure"
-      - "traefik.http.routers.taiga.tls=true"
-      - "traefik.http.routers.taiga.tls.certresolver=letsencrypt"
-      - "traefik.http.services.taiga-service.loadbalancer.server.port=80"
-      - "traefik.http.routers.taiga.service=taiga-service"
+      - "traefik.http.middlewares.taiga-websocket.headers.customrequestheaders.Connection=Upgrade"
+      - "traefik.http.middlewares.taiga-websocket.headers.customrequestheaders.Upgrade=websocket"
+      - "traefik.http.routers.taiga-ws.rule=Host(`taiga.22contrasts.com`) && Path(`/events`)"
+      - "traefik.http.routers.taiga-ws.entrypoints=websecure"
+      - "traefik.http.routers.taiga-ws.tls=true"
+      - "traefik.http.routers.taiga-ws.middlewares=taiga-websocket"
 
 volumes:
   taiga-static-data:
