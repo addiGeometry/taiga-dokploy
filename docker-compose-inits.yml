@@ -43,4 +43,3 @@ volumes:
 
 networks:
   taiga-network:
-    external: true
